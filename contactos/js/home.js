@@ -1,5 +1,6 @@
 $(document).ready(function(){
     getContactos();
+    save();
 });
 
 
@@ -18,12 +19,11 @@ function getContactos(){
 }
 
 function pintarDatos(datosArreglo){
-    console.log(datosArreglo);
     let cadena = '';
-    
+    console.log(datosArreglo);
     for (let i = 0; i < datosArreglo.length; i++) {
         cadena+=`
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-3 col-md-6" id="'${datosArreglo[i].con_id}'">
                 <div class="card">
                     <img class="card-img-top img-responsive" src="${datosArreglo[i].con_imagen}"
                         alt="Card image cap">
@@ -35,8 +35,8 @@ function pintarDatos(datosArreglo){
                         ${datosArreglo[i].con_descripcion}
                         </p>
                         <a href="javascript:void(0)" class="btn btn-primary">Ver</a>
-                        <a href="javascript:void(0)" class="btn btn-danger">Eliminar</a>
-                        <a href="javascript:void(0)" class="btn btn-success">Actualizar</a>
+                        <button class="btn btn-danger" onclick="eliminar('${datosArreglo[i].con_id}');">Eliminar</button>
+                        <button class="btn btn-success" onclick="openModalUpdate('${datosArreglo[i].con_id}','${datosArreglo[i].con_nombre}','${datosArreglo[i].con_telefono}','${datosArreglo[i].con_descripcion}');">Actualizar</button>
                     </div>
                 </div>
             </div>
@@ -47,3 +47,86 @@ function pintarDatos(datosArreglo){
 
 }
 
+function openModalUpdate(id, nombre, telefono, descripcion){
+    limpiarFormularios();
+    $("#accion").val("actualizar");
+    $("#idusuario").val(id);
+    $("#nombre").val(nombre);
+    $("#telefono").val(telefono);
+    $("#descripcion").val(descripcion);
+    $("#responsive-modal").modal("show");
+}
+
+function crear(){
+    limpiarFormularios();
+    $("#accion").val("crear");
+    $("#idusuario").val(0);
+    $("#responsive-modal").modal("show");
+}
+
+
+function save(){
+    $("#formulario").on("submit", function(e){
+        e.preventDefault();
+        //-----------------------Crear formulario desde cero
+        // var formData = new FormData();
+        // formData.append("username", "Groucho");
+        // formData.append("accountnum", 123456);
+        // console.log(formData.get("username"));
+        // ---------------------------
+
+        var datos = new FormData( $("#formulario")[0] );
+        // console.log(datos.get("nombre"));
+        
+        $.ajax({
+            method:"POST",
+            url:"contactos/controlador/ctr_home.php",
+            data: datos,
+            contentType:false,
+            processData:false,
+            cache:false,
+            success:function(respuestaServidor){
+                let respuesta = JSON.parse(respuestaServidor);
+                alerta(respuesta);
+            }
+        });
+
+
+    });
+}
+
+
+function limpiarFormularios(){
+    $("#formulario")[0].reset();
+}
+
+function alerta(respuesta, id){
+    if(respuesta.status===200){
+        $("#responsive-modal").modal("hide");
+        limpiarFormularios();
+        alert("Actualizado correctamente");
+        if(id !=0 ){
+            console.log("eliminando targeta");
+            $(`#${id}`).css('display', 'none');
+        }
+    }else{
+        alert("Ocurrio un error inesperado");
+    }
+}
+
+function eliminar(id){
+
+    let confirmar = confirm("¿Esta seguro de que desea eliminar al usuario?");
+
+    if(confirmar){
+        $.ajax({
+            method:"POST",
+            url:"contactos/controlador/ctr_home.php",
+            data: {accion:"eliminar", idUsuario:id},
+            success:function(respuestaServidor){
+                let respuesta = JSON.parse(respuestaServidor);
+                alerta(respuesta, id);
+            }
+        });
+    }
+}
